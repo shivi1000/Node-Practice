@@ -1,7 +1,8 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import { router as studentRouter } from './mongodb/routes/student.routes.js';
+//import { router as studentRouter } from './mongodb/routes/student.routes.js';
+import { router as userRouter } from './mongodb/routes/userOnboarding.routes.js';
 
 const MongoDb_Connection_String = `mongodb://localhost:27017/NODE-PRACTICE`;
 
@@ -20,10 +21,11 @@ const PORT = 8008;
 const app = express();
 app.use(express.json());
 app.use(cors());
-app.use('/api', studentRouter);
+//app.use('/api', studentRouter);
+app.use('/api/v1', userRouter);
 
 app.get('/', (req, res) => {
-  res.status(200).send("Hello World!");
+  res.status(200).send("Hello World! from Shivani");
 });
 
 app.listen(PORT, () => {
