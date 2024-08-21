@@ -55,8 +55,8 @@ router.post('/forgotPassword', async (req, res) => {
         const userData = await User.findOne({ email: req.body.email });
         if (!userData)
             return res.status(400).json({ message: "This email does not exists" })
-        const EMAIL = "edc.cloud.computing@gmail.com";
-        const PASSWORD = "ifiy pvnu kyqt ftim"
+        const EMAIL = "";
+        const PASSWORD = ""
         const transporter = nodemailer.createTransport({
             service: "gmail",
             host: "smtp.gmail.com",
