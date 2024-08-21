@@ -1,11 +1,11 @@
 import express from "express"
 import { User } from "../models/user.model.js";
-import { ENUM } from "../../common/enum.js";
+import { ENUM } from "../common/enum.js";
 import bcrypt from "bcrypt";
-import { CONST } from "../../common/const.js";
+import { CONST } from "../common/const.js";
 import nodemailer from "nodemailer";
 import path from "path";
-import { htmlTemplateMaker } from "../../html.js";
+import { htmlTemplateMaker } from "../html.js";
 const router = express.Router();
 
 router.post('/signup', async (req, res) => {
