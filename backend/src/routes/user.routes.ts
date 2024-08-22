@@ -6,7 +6,15 @@ import { CONST } from "../common/const.js";
 import nodemailer from "nodemailer";
 import path from "path";
 import { htmlTemplateMaker } from "../html.js";
+import * as dotenv from "dotenv";
+dotenv.config();
 const router = express.Router();
+
+const SERVICE = process.env.SERVICE;
+const HOST = process.env.HOST;
+const PORT = Number(process.env.PORT);
+const EMAIL = process.env.EMAIL;
+const PASSWORD = process.env.PASSWORD;
 
 router.post('/signup', async (req, res) => {
     try {
@@ -55,12 +63,10 @@ router.post('/forgotPassword', async (req, res) => {
         const userData = await User.findOne({ email: req.body.email });
         if (!userData)
             return res.status(400).json({ message: "This email does not exists" })
-        const EMAIL = "";
-        const PASSWORD = ""
         const transporter = nodemailer.createTransport({
-            service: "gmail",
-            host: "smtp.gmail.com",
-            port: 587,
+            service: SERVICE,
+            host: HOST,
+            port: PORT,
             secure: false,
             auth: {
                 user: EMAIL,
