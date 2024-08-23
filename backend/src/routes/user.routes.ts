@@ -7,33 +7,70 @@ import nodemailer from "nodemailer";
 import path from "path";
 import { htmlTemplateMaker } from "../html.js";
 import * as dotenv from "dotenv";
+import { appConfig } from "../common/appConfig.js";
+import twilio from 'twilio';
 dotenv.config();
 const router = express.Router();
 
-const SERVICE = process.env.SERVICE;
-const HOST = process.env.HOST;
-const PORT = Number(process.env.PORT);
-const EMAIL = process.env.EMAIL;
-const PASSWORD = process.env.PASSWORD;
+const SERVICE = appConfig.SERVICE
+const HOST = appConfig.HOST
+const PORT = Number(appConfig.PORT)
+const EMAIL = appConfig.EMAIL
+const PASSWORD = appConfig.PASSWORD
+const TWILIO_ACCOUNT_SID = appConfig.TWILIO_ACCOUNT_SID
+const TWILIO_AUTH_TOKEN = appConfig.TWILIO_AUTH_TOKEN
+const TWILIO_SERVICE_SID = appConfig.TWILIO_SERVICE_SID
+const TWILIO_MOBILE_NUMBER = appConfig.TWILIO_MOBILE_NUMBER
+
+//const client = require ('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, {lazyLoading: true})
+//const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, {lazyLoading: true})
 
 router.post('/signup', async (req, res) => {
     try {
         const userData = await User.findOne({ email: req.body.email });
         if (userData)
             return res.status(404).json({ message: "This email already exists" })
+
+        const { countryCode, mobile } = req.body;
         const plainPassword: string = await bcrypt.hash(req.body.password, CONST.saltRounds)
+
+        // const otpResponses = await client.verify
+        // .services(TWILIO_SERVICE_SID)
+        // .verification.create({
+        //     from: TWILIO_MOBILE_NUMBER,
+        //     to: `+${countryCode}${mobile}`,
+        //     channel: 'sms',
+        // });
+
         const payload = {
             name: req.body.name,
             email: req.body.email,
+            countryCode: req.body.countryCode,
             mobile: req.body.mobile,
             password: plainPassword,
             status: req.body.status
         }
         const data = await User.create(payload);
-        console.log("User created Successfully >>>>>>>>>>>>>>>>");
-        return res.status(200).json(data);
+        console.log("Signup Successfully >>>>>>>>>>>");
+        //return res.status(200).json({message: `OTP send successfully!, ${JSON.stringify(otpResponses)}`, data: data});
     } catch (error) {
-        console.log("Error while creating user >>>>>>>>>>>", error);
+        console.log("Error while signup >>>>>>>>>>>", error);
+        throw error;
+    }
+})
+
+router.post('/verify-otp', async (req, res) => {
+    try {
+        const { countryCode, mobile, otp } = req.body;
+        // const verifyResponses = await client.verify
+        // .services(TWILIO_SERVICE_SID)
+        // .verification.create({
+        //     to: `+${countryCode}${mobile}`,
+        //     code: otp,
+        // });
+        //return res.status(200).send(`OTP verified successfully!, ${JSON.stringify(verifyResponses)}`);
+    } catch (error) {
+        console.log("Error while verify otp >>>>>>>>>>>", error);
         throw error;
     }
 })
@@ -160,3 +197,4 @@ router.post('/logout', async (req, res) => {
 })
 
 export { router };
+

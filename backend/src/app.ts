@@ -3,12 +3,13 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import { router as userRouter } from './routes/user.routes.js';
 import * as dotenv from "dotenv";
+import { appConfig } from './common/appConfig.js';
 dotenv.config();
 
 const MongoDb_Connection_String = `mongodb://localhost:27017/NODE-PRACTICE`;
-//const MongoDb_Connection_String = process.env.MONGODB_URI as string;
-const PORT = process.env.PORT || 8008;
+//const MongoDb_Connection_String = appConfig.DB_URI as string;
 //console.log(">>>>>>>>",process.env.MONGODB_URI )
+const PORT = appConfig.APP_PORT || 8008;
 
 async function connectToMongoDB(uri: string) {
   await mongoose.connect(String(uri));
