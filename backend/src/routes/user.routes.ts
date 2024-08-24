@@ -9,35 +9,9 @@ import { htmlTemplateMaker } from "../html.js";
 import * as dotenv from "dotenv";
 import { appConfig } from "../common/appConfig.js";
 import twilio from 'twilio';
-import { specs, swaggerUi } from '../swagger-config.js';
 dotenv.config();
 const router = express.Router();
-
-const SERVICE = appConfig.SERVICE
-const HOST = appConfig.HOST
-const PORT = Number(appConfig.PORT)
-const EMAIL = appConfig.EMAIL
-const PASSWORD = appConfig.PASSWORD
-const TWILIO_ACCOUNT_SID = appConfig.TWILIO_ACCOUNT_SID
-const TWILIO_AUTH_TOKEN = appConfig.TWILIO_AUTH_TOKEN
-const TWILIO_SERVICE_SID = appConfig.TWILIO_SERVICE_SID
-const TWILIO_MOBILE_NUMBER = appConfig.TWILIO_MOBILE_NUMBER
-
-//const client = require ('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, {lazyLoading: true})
-//const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, {lazyLoading: true})
-
-/**
- * @swagger
- * tags
- * name: Onboarding
- * /signup:
- *   post:
- *     summary: Creates a user
- *     responses:
- *       200:
- *         description: User created successfully
- */
-
+const client = twilio(appConfig.TWILIO_ACCOUNT_SID, appConfig.TWILIO_AUTH_TOKEN, { lazyLoading: true })
 
 router.post('/signup', async (req, res) => {
     try {
@@ -48,13 +22,12 @@ router.post('/signup', async (req, res) => {
         const { countryCode, mobile } = req.body;
         const plainPassword: string = await bcrypt.hash(req.body.password, CONST.saltRounds)
 
-        // const otpResponses = await client.verify
-        // .services(TWILIO_SERVICE_SID)
-        // .verification.create({
-        //     from: TWILIO_MOBILE_NUMBER,
-        //     to: `+${countryCode}${mobile}`,
-        //     channel: 'sms',
-        // });
+        const otpResponses = await client.verify.v2
+            .services(appConfig.TWILIO_SERVICE_SID)
+            .verifications.create({
+                to: `+${countryCode}${mobile}`,
+                channel: 'sms',
+            });
 
         const payload = {
             name: req.body.name,
@@ -66,7 +39,7 @@ router.post('/signup', async (req, res) => {
         }
         const data = await User.create(payload);
         console.log("Signup Successfully >>>>>>>>>>>");
-        //return res.status(200).json({message: `OTP send successfully!, ${JSON.stringify(otpResponses)}`, data: data});
+        return res.status(200).json({ message: `OTP send successfully!, ${JSON.stringify(otpResponses)}`, data: data });
     } catch (error) {
         console.log("Error while signup >>>>>>>>>>>", error);
         throw error;
@@ -76,13 +49,22 @@ router.post('/signup', async (req, res) => {
 router.post('/verify-otp', async (req, res) => {
     try {
         const { countryCode, mobile, otp } = req.body;
-        // const verifyResponses = await client.verify
-        // .services(TWILIO_SERVICE_SID)
-        // .verification.create({
-        //     to: `+${countryCode}${mobile}`,
-        //     code: otp,
-        // });
-        //return res.status(200).send(`OTP verified successfully!, ${JSON.stringify(verifyResponses)}`);
+        const verifyResponses = await client.verify.v2
+            .services(appConfig.TWILIO_SERVICE_SID)
+            .verificationChecks.create({
+                to: `+${countryCode}${mobile}`,
+                code: otp,
+            });
+
+        let payload;
+        if (verifyResponses.status == 'approved') {
+            payload = {
+                otp: req.body.otp,
+                isOtpVerified: true
+            }
+        }
+        await User.findOneAndUpdate({ mobile: mobile }, { $set: payload }, { new: true })
+        return res.status(200).send(`OTP verified successfully!, ${JSON.stringify(verifyResponses)}`);
     } catch (error) {
         console.log("Error while verify otp >>>>>>>>>>>", error);
         throw error;
@@ -115,30 +97,30 @@ router.post('/forgotPassword', async (req, res) => {
         if (!userData)
             return res.status(400).json({ message: "This email does not exists" })
         const transporter = nodemailer.createTransport({
-            service: SERVICE,
-            host: HOST,
-            port: PORT,
+            service: appConfig.SERVICE,
+            host: appConfig.HOST,
+            port: Number(appConfig.PORT),
             secure: false,
             auth: {
-                user: EMAIL,
-                pass: PASSWORD,
+                user: appConfig.EMAIL,
+                pass: appConfig.PASSWORD,
             },
         });
         const htmlTemplatePath = path.join(CONST.EMAIL_TEMPLATES);
-        const html = await htmlTemplateMaker.makeHtmlTemplate(htmlTemplatePath,userData.name);
-            await transporter.sendMail({
-                from: EMAIL, 
-                to: req.body.email,
-                subject: CONST.FORGOT_PASSWORD, 
-                text: "Have you forgotten your password ?",
-                html: html
-            });
-            return res.status(200).json({message: "Mail sent successfully", data: userData._id})
-        } catch (error) {
-            console.log("Error while forgot Password >>>>>>>>>>>", error);
-            throw error;
-        }
-    })
+        const html = await htmlTemplateMaker.makeHtmlTemplate(htmlTemplatePath, userData.name);
+        await transporter.sendMail({
+            from: appConfig.EMAIL,
+            to: req.body.email,
+            subject: CONST.FORGOT_PASSWORD,
+            text: "Have you forgotten your password ?",
+            html: html
+        });
+        return res.status(200).json({ message: "Mail sent successfully", data: userData._id })
+    } catch (error) {
+        console.log("Error while forgot Password >>>>>>>>>>>", error);
+        throw error;
+    }
+})
 
 router.post('/resetPassword', async (req, res) => {
     try {

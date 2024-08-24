@@ -7,12 +7,31 @@ const options = {
     info: {
       title: 'Swagger Express API',
       version: '1.0.0',
-      description: 'A simple Express API with Swagger documentation- Shivani',
+      description: 'A simple Express API with Swagger documentation - Node-Practice',
     },
+    servers: [
+      {
+        "url": "http://localhost:8008/api-docs/"
+      }
+    ],
+    components: {
+      securitySchemas: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      }
+    ]
   },
-  apis: [ './routes/user.routes.js'],
+  apis: ['./routes/user.routes.js', './models/user.model.js'],
 };
 
-const specs = swaggerJsdoc(options);
+const swaggerSpec = swaggerJsdoc(options);
 
-export { specs, swaggerUi };
+export default swaggerSpec;

@@ -7,6 +7,7 @@ const UserSchema = new mongoose.Schema({
     mobile: String,
     password: String,
     otp: Number,
+    isOtpVerified: Boolean,
     status: Number,
     
 })
