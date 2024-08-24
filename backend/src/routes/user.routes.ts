@@ -9,6 +9,7 @@ import { htmlTemplateMaker } from "../html.js";
 import * as dotenv from "dotenv";
 import { appConfig } from "../common/appConfig.js";
 import twilio from 'twilio';
+import { specs, swaggerUi } from '../swagger-config.js';
 dotenv.config();
 const router = express.Router();
 
@@ -24,6 +25,19 @@ const TWILIO_MOBILE_NUMBER = appConfig.TWILIO_MOBILE_NUMBER
 
 //const client = require ('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, {lazyLoading: true})
 //const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, {lazyLoading: true})
+
+/**
+ * @swagger
+ * tags
+ * name: Onboarding
+ * /signup:
+ *   post:
+ *     summary: Creates a user
+ *     responses:
+ *       200:
+ *         description: User created successfully
+ */
+
 
 router.post('/signup', async (req, res) => {
     try {

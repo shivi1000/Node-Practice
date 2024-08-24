@@ -4,6 +4,7 @@ import cors from 'cors';
 import { router as userRouter } from './routes/user.routes.js';
 import * as dotenv from "dotenv";
 import { appConfig } from './common/appConfig.js';
+import { specs, swaggerUi } from './swagger-config.js';
 dotenv.config();
 
 const MongoDb_Connection_String = `mongodb://localhost:27017/NODE-PRACTICE`;
@@ -24,6 +25,7 @@ try {
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use("/api-docs",swaggerUi.serve,swaggerUi.setup(specs, { explorer: true }));
 app.use('/api/v1', userRouter);
 
 app.get('/', (req, res) => {
