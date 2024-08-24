@@ -13,4 +13,6 @@ export const appConfig = {
     TWILIO_AUTH_TOKEN: <string>process.env.TWILIO_AUTH_TOKEN,
     TWILIO_SERVICE_SID: <string>process.env.TWILIO_SERVICE_SID,
     TWILIO_MOBILE_NUMBER: process.env.TWILIO_MOBILE_NUMBER,
+    JWT_SECRET_KEY: <string>process.env.JWT_SECRET_KEY // node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
 }

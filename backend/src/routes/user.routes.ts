@@ -1,4 +1,4 @@
-import express from "express"
+import express, { Request, Response, NextFunction } from 'express';
 import { User } from "../models/user.model.js";
 import { ENUM } from "../common/enum.js";
 import bcrypt from "bcrypt";
@@ -6,14 +6,14 @@ import { CONST } from "../common/const.js";
 import nodemailer from "nodemailer";
 import path from "path";
 import { htmlTemplateMaker } from "../html.js";
-import * as dotenv from "dotenv";
 import { appConfig } from "../common/appConfig.js";
 import twilio from 'twilio';
-dotenv.config();
+import jwt from "jsonwebtoken";
+import { verifyToken } from '../middleware/middleware.js';
 const router = express.Router();
 const client = twilio(appConfig.TWILIO_ACCOUNT_SID, appConfig.TWILIO_AUTH_TOKEN, { lazyLoading: true })
 
-router.post('/signup', async (req, res) => {
+router.post('/signup', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userData = await User.findOne({ email: req.body.email });
         if (userData)
@@ -46,7 +46,7 @@ router.post('/signup', async (req, res) => {
     }
 })
 
-router.post('/verify-otp', async (req, res) => {
+router.post('/verify-otp', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { countryCode, mobile, otp } = req.body;
         const verifyResponses = await client.verify.v2
@@ -71,19 +71,18 @@ router.post('/verify-otp', async (req, res) => {
     }
 })
 
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response) => {
     try {
         const userData: any = await User.findOne({ email: req.body.email });
         if (!userData)
             return res.status(404).json({ message: "This email does not exist. Please enter the registered email" })
         const passwordMatch = await bcrypt.compare(req.body.password, userData.password)
-        console.log("passwordMatch", passwordMatch);
-        console.log("userData.password", userData.password);
         if (!passwordMatch) {
             return res.status(401).json({ message: "Incorrect password" })
         } else {
             console.log("User fetched Successfully >>>>>>>>>>>>>>>>");
-            return res.status(200).json({ message: "Logged In Successfully" });
+            const token = jwt.sign({userData}, appConfig.JWT_SECRET_KEY, { expiresIn: '1h' });
+            return res.status(200).json({ message: "Logged In Successfully", data: token });
         }
     } catch (error) {
         console.log("Error while fetching user >>>>>>>>>>>", error);
@@ -91,7 +90,7 @@ router.post('/login', async (req, res) => {
     }
 })
 
-router.post('/forgotPassword', async (req, res) => {
+router.post('/forgotPassword', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userData = await User.findOne({ email: req.body.email });
         if (!userData)
@@ -122,7 +121,7 @@ router.post('/forgotPassword', async (req, res) => {
     }
 })
 
-router.post('/resetPassword', async (req, res) => {
+router.post('/resetPassword', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userData = await User.findOne({ _id: req.body.id });
         if (!userData)
@@ -143,7 +142,7 @@ router.post('/resetPassword', async (req, res) => {
     }
 })
 
-router.post('/changePassword', async (req, res) => {
+router.post('/changePassword', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const oldPassword = await User.findOne({ password: req.body.newPassword });
         if (req.body.newPassword == oldPassword?.password) {
@@ -161,11 +160,11 @@ router.post('/changePassword', async (req, res) => {
     }
 })
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const data = await User.findOne({ _id: req.params.id });
         if (!data) {
-            return res.status(400).json({ message: "This user does not exist" });
+            return res.status(404).json({ message: "This user does not exist" });
         } else {
             console.log("User details fetched successfully >>>>>>>>>>>");
             return res.status(200).json(data);
@@ -176,7 +175,7 @@ router.get('/:id', async (req, res) => {
     }
 })
 
-router.post('/logout', async (req, res) => {
+router.post('/logout', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userData = await User.findOne({ _id: req.body.id });
         if (!userData) {
