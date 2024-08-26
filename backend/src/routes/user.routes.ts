@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { User } from "../models/user.model.js";
+import User from '../models/user.model.js';
 import { ENUM } from "../common/enum.js";
 import bcrypt from "bcrypt";
 import { CONST } from "../common/const.js";
@@ -35,10 +35,11 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
             countryCode: req.body.countryCode,
             mobile: req.body.mobile,
             password: plainPassword,
-            status: req.body.status
         }
+
         const data = await User.create(payload);
         console.log("Signup Successfully >>>>>>>>>>>");
+
         return res.status(200).json({ message: `OTP send successfully!, ${JSON.stringify(otpResponses)}`, data: data });
     } catch (error) {
         console.log("Error while signup >>>>>>>>>>>", error);
@@ -64,6 +65,7 @@ router.post('/verify-otp', async (req: Request, res: Response, next: NextFunctio
             }
         }
         await User.findOneAndUpdate({ mobile: mobile }, { $set: payload }, { new: true })
+
         return res.status(200).send(`OTP verified successfully!, ${JSON.stringify(verifyResponses)}`);
     } catch (error) {
         console.log("Error while verify otp >>>>>>>>>>>", error);
@@ -71,7 +73,7 @@ router.post('/verify-otp', async (req: Request, res: Response, next: NextFunctio
     }
 })
 
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userData: any = await User.findOne({ email: req.body.email });
         if (!userData)
@@ -81,7 +83,18 @@ router.post('/login', async (req: Request, res: Response) => {
             return res.status(401).json({ message: "Incorrect password" })
         } else {
             console.log("User fetched Successfully >>>>>>>>>>>>>>>>");
-            const token = jwt.sign({userData}, appConfig.JWT_SECRET_KEY, { expiresIn: '1h' });
+
+            //    req.session.cookie =
+            //    { id: 1, username: 'example' };
+            //     res.send('Logged in');
+            // });
+            const payload = {
+                userId: userData._id,
+                name: userData.name,
+                email: userData.email
+            }
+            const token = jwt.sign({payload},appConfig.JWT_SECRET_KEY,{ expiresIn: '1h' });
+
             return res.status(200).json({ message: "Logged In Successfully", data: token });
         }
     } catch (error) {
@@ -114,6 +127,7 @@ router.post('/forgotPassword', async (req: Request, res: Response, next: NextFun
             text: "Have you forgotten your password ?",
             html: html
         });
+
         return res.status(200).json({ message: "Mail sent successfully", data: userData._id })
     } catch (error) {
         console.log("Error while forgot Password >>>>>>>>>>>", error);
@@ -134,6 +148,7 @@ router.post('/resetPassword', async (req: Request, res: Response, next: NextFunc
             return res.status(400).json({ message: "Confirm password does not match with new password" });
         } else {
             await User.findOneAndUpdate({ _id: req.body.id, password: req.body.newPassword });
+
             return res.status(200).json({ message: "Password reset successfully" });
         }
     } catch (error) {
@@ -142,7 +157,7 @@ router.post('/resetPassword', async (req: Request, res: Response, next: NextFunc
     }
 })
 
-router.post('/changePassword', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/changePassword', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const oldPassword = await User.findOne({ password: req.body.newPassword });
         if (req.body.newPassword == oldPassword?.password) {
@@ -152,6 +167,7 @@ router.post('/changePassword', async (req: Request, res: Response, next: NextFun
             return res.status(400).json({ message: "Confirm password does not match with new password" });
         } else {
             await User.findOneAndUpdate({ _id: req.body.id, password: req.body.newPassword });
+
             return res.status(200).json({ message: "Password changed successfully" });
         }
     } catch (error) {
@@ -164,9 +180,10 @@ router.get('/:id', verifyToken, async (req: Request, res: Response, next: NextFu
     try {
         const data = await User.findOne({ _id: req.params.id });
         if (!data) {
-            return res.status(404).json({ message: "This user does not exist" });
+            return res.status(404).json({ message: "This user does not exist", data: data });
         } else {
             console.log("User details fetched successfully >>>>>>>>>>>");
+
             return res.status(200).json(data);
         }
     } catch (error) {
@@ -175,7 +192,7 @@ router.get('/:id', verifyToken, async (req: Request, res: Response, next: NextFu
     }
 })
 
-router.post('/logout', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/logout', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userData = await User.findOne({ _id: req.body.id });
         if (!userData) {
@@ -183,6 +200,7 @@ router.post('/logout', async (req: Request, res: Response, next: NextFunction) =
         } else {
             await User.findOneAndUpdate({ _id: req.body.id, status: ENUM.STATUS.INACTIVE });
             console.log("User logout Successfully >>>>>>>>>>>>>>>>");
+
             return res.status(200).json({ message: "User logout successfully " });
         }
     } catch (error) {
