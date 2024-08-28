@@ -14,8 +14,8 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
             if (err) {
                 return res.status(403).json({ err });
             }
-            //req.user = decoded;
-            return next();
+            res.locals.data = decoded;
+            next();
         });
     } catch (error) {
         console.log("Error while verify token >>>>>>>>>>>", error);

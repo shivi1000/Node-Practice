@@ -14,7 +14,7 @@ const deviceDetails = new Schema({
 export const UserSessionSchema = new Schema({
     userId: { type: SchemaTypes.ObjectId, required: true, index: true, ref: ENUM.COLLECTION.USER },
     deviceDetails: { type: deviceDetails, trim: true },
-    status: {type: SchemaTypes.String, default: ENUM.STATUS.ACTIVE},
+    status: {type: SchemaTypes.Number, default: ENUM.STATUS.ACTIVE},
     
 },
 {

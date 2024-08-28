@@ -10,6 +10,7 @@ import { appConfig } from "../common/appConfig.js";
 import twilio from 'twilio';
 import jwt from "jsonwebtoken";
 import { verifyToken } from '../middleware/middleware.js';
+import UserSession  from '../models/userSession.model.js';
 const router = express.Router();
 const client = twilio(appConfig.TWILIO_ACCOUNT_SID, appConfig.TWILIO_AUTH_TOKEN, { lazyLoading: true })
 
@@ -19,9 +20,9 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
         if (userData)
             return res.status(404).json({ message: "This email already exists" })
 
-        const { countryCode, mobile } = req.body;
-        const plainPassword: string = await bcrypt.hash(req.body.password, CONST.saltRounds)
+        const hashedPassword: string = await bcrypt.hash(req.body.password, CONST.saltRounds)
 
+        const { countryCode, mobile } = req.body;
         const otpResponses = await client.verify.v2
             .services(appConfig.TWILIO_SERVICE_SID)
             .verifications.create({
@@ -34,7 +35,7 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
             email: req.body.email,
             countryCode: req.body.countryCode,
             mobile: req.body.mobile,
-            password: plainPassword,
+            password: hashedPassword,
         }
 
         const data = await User.create(payload);
@@ -66,7 +67,24 @@ router.post('/verify-otp', async (req: Request, res: Response, next: NextFunctio
         }
         await User.findOneAndUpdate({ mobile: mobile }, { $set: payload }, { new: true })
 
-        return res.status(200).send(`OTP verified successfully!, ${JSON.stringify(verifyResponses)}`);
+        const userData: any = await User.findOne({ mobile: mobile });
+
+        const sessionPayload = {
+            userId: userData._id,
+            deviceDetails: req.headers
+        }
+
+        const createSession = await UserSession.create(sessionPayload)
+
+        const tokenPayload = {
+            sessionId: createSession._id,
+            userId: userData._id,
+            name: userData.name,
+            email: userData.email
+        }
+        const token = jwt.sign(tokenPayload, appConfig.JWT_SECRET_KEY, { expiresIn: CONST.EXPIRY_JWT_TOKEN });
+
+        return res.status(200).send({ message: `OTP verified successfully!, ${JSON.stringify(verifyResponses)}`, data: token });
     } catch (error) {
         console.log("Error while verify otp >>>>>>>>>>>", error);
         throw error;
@@ -78,25 +96,27 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
         const userData: any = await User.findOne({ email: req.body.email });
         if (!userData)
             return res.status(404).json({ message: "This email does not exist. Please enter the registered email" })
+
         const passwordMatch = await bcrypt.compare(req.body.password, userData.password)
-        if (!passwordMatch) {
+        if (!passwordMatch)
             return res.status(401).json({ message: "Incorrect password" })
-        } else {
-            console.log("User fetched Successfully >>>>>>>>>>>>>>>>");
 
-            //    req.session.cookie =
-            //    { id: 1, username: 'example' };
-            //     res.send('Logged in');
-            // });
-            const payload = {
-                userId: userData._id,
-                name: userData.name,
-                email: userData.email
-            }
-            const token = jwt.sign({payload},appConfig.JWT_SECRET_KEY,{ expiresIn: '1h' });
-
-            return res.status(200).json({ message: "Logged In Successfully", data: token });
+        const sessionPayload = {
+            userId: userData._id,
+            deviceDetails: req.headers
         }
+
+        const createSession = await UserSession.create(sessionPayload)
+
+        const tokenPayload = {
+            sessionId: createSession._id,
+            userId: userData._id,
+            name: userData.name,
+            email: userData.email
+        }
+        const token = jwt.sign(tokenPayload , appConfig.JWT_SECRET_KEY, { expiresIn: CONST.EXPIRY_JWT_TOKEN });
+
+        return res.status(200).json({ message: "Logged In Successfully", data: token });
     } catch (error) {
         console.log("Error while fetching user >>>>>>>>>>>", error);
         throw error;
@@ -166,7 +186,7 @@ router.post('/changePassword', verifyToken, async (req: Request, res: Response, 
         if (req.body.newPassword != req.body.confirmPassword) {
             return res.status(400).json({ message: "Confirm password does not match with new password" });
         } else {
-            await User.findOneAndUpdate({ _id: req.body.id, password: req.body.newPassword });
+            await User.findOneAndUpdate({ _id: res.locals.data.userId, password: req.body.newPassword });
 
             return res.status(200).json({ message: "Password changed successfully" });
         }
@@ -176,15 +196,15 @@ router.post('/changePassword', verifyToken, async (req: Request, res: Response, 
     }
 })
 
-router.get('/:id', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/details', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const data = await User.findOne({ _id: req.params.id });
-        if (!data) {
-            return res.status(404).json({ message: "This user does not exist", data: data });
-        } else {
+        console.log("PPP", res.locals.data);
+        const data = await User.findOne({ _id: res.locals.data.userId });
+        if (data) {
             console.log("User details fetched successfully >>>>>>>>>>>");
-
-            return res.status(200).json(data);
+            return res.status(200).json({message: 'User details fetched successfully', data: data});
+        } else {
+            return res.status(404).json({ message: "This user does not exist" });
         }
     } catch (error) {
         console.log("Error while fetching user details >>>>>>>>>>>", error);
@@ -194,11 +214,11 @@ router.get('/:id', verifyToken, async (req: Request, res: Response, next: NextFu
 
 router.post('/logout', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userData = await User.findOne({ _id: req.body.id });
+        const userData = await User.findOne({ _id: res.locals.data.userId });
         if (!userData) {
             return res.status(400).json({ message: "This user does not exist" })
         } else {
-            await User.findOneAndUpdate({ _id: req.body.id, status: ENUM.STATUS.INACTIVE });
+            await User.findOneAndUpdate({ _id: res.locals.data.userId, status: ENUM.STATUS.INACTIVE });
             console.log("User logout Successfully >>>>>>>>>>>>>>>>");
 
             return res.status(200).json({ message: "User logout successfully " });
