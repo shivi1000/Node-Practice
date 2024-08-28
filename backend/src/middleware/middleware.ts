@@ -22,17 +22,3 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
         throw error;
     }
 }
-
-export async function createSession() {
-    try {
-        app.use(session({
-            secret: appConfig.JWT_SECRET_KEY,
-            resave: false,
-            saveUninitialized: false
-          }));
-
-    } catch (error) {
-        console.log("Error while create session >>>>>>>>>>>", error);
-        throw error;
-    }
-}
