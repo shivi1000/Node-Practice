@@ -11,7 +11,7 @@ export const UserSchema = new Schema({
     password: {type: SchemaTypes.String, required: true, trim: true},
     otp: {type: SchemaTypes.Number},
     isOtpVerified: {type: SchemaTypes.Boolean},
-    status: {type: SchemaTypes.String, default: ENUM.STATUS.ACTIVE},
+    status: {type: SchemaTypes.Number, default: ENUM.STATUS.ACTIVE},
 },
 {
     versionKey: false,

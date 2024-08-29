@@ -9,7 +9,7 @@ import { htmlTemplateMaker } from "../html.js";
 import { appConfig } from "../common/appConfig.js";
 import twilio from 'twilio';
 import jwt from "jsonwebtoken";
-import { verifyToken } from '../middleware/middleware.js';
+import { authentication, verifyToken } from '../middleware/middleware.js';
 import UserSession from '../models/userSession.model.js';
 import multer from 'multer';
 import multerS3 from 'multer-s3';
@@ -38,7 +38,7 @@ const upload = multer({
     })
 });
 
-router.post('/signup', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/signup', authentication, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userData = await User.findOne({ email: req.body.email });
         if (userData)
@@ -72,7 +72,7 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
     }
 })
 
-router.post('/verify-otp', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/verify-otp', authentication, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { countryCode, mobile, otp } = req.body;
         const verifyResponses = await client.verify.v2
@@ -115,7 +115,7 @@ router.post('/verify-otp', async (req: Request, res: Response, next: NextFunctio
     }
 })
 
-router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/login', authentication, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userData: any = await User.findOne({ email: req.body.email });
         if (!userData)
@@ -147,7 +147,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     }
 })
 
-router.post('/forgotPassword', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/forgotPassword', authentication, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userData = await User.findOne({ email: req.body.email });
         if (!userData)
@@ -179,7 +179,7 @@ router.post('/forgotPassword', async (req: Request, res: Response, next: NextFun
     }
 })
 
-router.post('/resetPassword', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/resetPassword', authentication, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userData = await User.findOne({ _id: req.body.id });
         if (!userData)
