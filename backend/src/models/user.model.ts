@@ -7,6 +7,7 @@ export const UserSchema = new Schema({
     email: {type: SchemaTypes.String, required: true, unique: true, trim: true},
     countryCode: {type: SchemaTypes.String, required: true, trim: true},
     mobile: {type: SchemaTypes.String, required: true, trim: true},
+    profileImage:  {type: SchemaTypes.String, trim: true},
     password: {type: SchemaTypes.String, required: true, trim: true},
     otp: {type: SchemaTypes.Number},
     isOtpVerified: {type: SchemaTypes.Boolean},

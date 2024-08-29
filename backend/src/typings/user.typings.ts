@@ -5,6 +5,7 @@ export interface IUser extends Document {
     email: string,
     countryCode: string,
     mobile: string,
+    profileImage?: string,
     password: string,
     otp?: number,
     isOtpVerified?: boolean,

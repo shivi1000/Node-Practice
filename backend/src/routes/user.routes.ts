@@ -10,9 +10,33 @@ import { appConfig } from "../common/appConfig.js";
 import twilio from 'twilio';
 import jwt from "jsonwebtoken";
 import { verifyToken } from '../middleware/middleware.js';
-import UserSession  from '../models/userSession.model.js';
+import UserSession from '../models/userSession.model.js';
+import multer from 'multer';
+import multerS3 from 'multer-s3';
+import AWS from 'aws-sdk';
+import { S3Client } from '@aws-sdk/client-s3';
 const router = express.Router();
 const client = twilio(appConfig.TWILIO_ACCOUNT_SID, appConfig.TWILIO_AUTH_TOKEN, { lazyLoading: true })
+
+AWS.config.update({
+    accessKeyId: appConfig.AWS_ACCESS_KEY_ID,
+    secretAccessKey: appConfig.AWS_SECRET_ACCESS_KEY,
+    region: appConfig.AWS_REGION
+})
+const s3 = new S3Client() //The aws-sdk provides the version 2 client. @aws-sdk/client-s3 is part of the V3 javascript SDK.
+const bucketName = appConfig.AWS_S3_BUCKET_NAME
+
+const upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: bucketName,
+        //acl: 'private',
+        contentType: multerS3.AUTO_CONTENT_TYPE,
+        key: function (req, file, cb) {
+            cb(null, file.originalname)
+        }
+    })
+});
 
 router.post('/signup', async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -114,7 +138,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
             name: userData.name,
             email: userData.email
         }
-        const token = jwt.sign(tokenPayload , appConfig.JWT_SECRET_KEY, { expiresIn: CONST.EXPIRY_JWT_TOKEN });
+        const token = jwt.sign(tokenPayload, appConfig.JWT_SECRET_KEY, { expiresIn: CONST.EXPIRY_JWT_TOKEN });
 
         return res.status(200).json({ message: "Logged In Successfully", data: token });
     } catch (error) {
@@ -202,12 +226,26 @@ router.get('/details', verifyToken, async (req: Request, res: Response, next: Ne
         const data = await User.findOne({ _id: res.locals.data.userId });
         if (data) {
             console.log("User details fetched successfully >>>>>>>>>>>");
-            return res.status(200).json({message: 'User details fetched successfully', data: data});
+            return res.status(200).json({ message: 'User details fetched successfully', data: data });
         } else {
             return res.status(404).json({ message: "This user does not exist" });
         }
     } catch (error) {
         console.log("Error while fetching user details >>>>>>>>>>>", error);
+        throw error;
+    }
+})
+
+router.put('/completeProfile', verifyToken,  upload.single('profileImage'), async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userData = await User.findOne({ _id: res.locals.data.userId });
+        if (!userData)
+            return res.status(404).json({ message: "This user does not exist" })
+        console.log(req.file);
+        console.log("completeProfile Successfully >>>>>>>>>>>");
+        return res.status(200).json({ message: 'Profile Image Uploaded successfully', data: req.file });
+    } catch (error) {
+        console.log("Error while completeProfile >>>>>>>>>>>", error);
         throw error;
     }
 })
