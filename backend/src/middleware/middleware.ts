@@ -17,7 +17,7 @@ export async function authentication(req: Request, res: Response, next: NextFunc
         const user = auth[0];
         const pass = auth[1];
 
-        if (user == 'admin' && pass == 'password') {
+        if (user == appConfig.BASIC_USERNAME && pass == appConfig.BASIC_PASSWORD) {
             next();
         } else {
             let err = new Error('You are not authenticated!');
