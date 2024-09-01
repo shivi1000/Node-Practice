@@ -21,5 +21,9 @@ export const appConfig = {
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
     AWS_S3_BUCKET_NAME: <string>process.env.AWS_S3_BUCKET_NAME,
     AWS_REGION: process.env.AWS_REGION,
+    APP_ID: <string>process.env.APP_ID,
+    KEY: <string>process.env.KEY,
+    SECRET: <string>process.env.SECRET,
+    CLUSTER: <string>process.env.CLUSTER,
 
 }

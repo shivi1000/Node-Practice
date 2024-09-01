@@ -1,3 +1,4 @@
+
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -7,6 +8,7 @@ import { appConfig } from './common/appConfig.js';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 //import swaggerSpec from './swagger.json' with {type: 'json'};
+import Pusher from 'pusher';
 dotenv.config();
 
 const connectionString = appConfig.MONGODB_URI as string;
@@ -62,6 +64,43 @@ const options = {
 export const swaggerSpec = swaggerJsdoc(options);
 console.log(swaggerSpec)
 
+const pusher = new Pusher({
+  appId: appConfig.APP_ID,
+  key: appConfig.KEY,
+  secret: appConfig.SECRET,
+  cluster:appConfig.CLUSTER,
+  useTLS: true
+});
+
+//const attributes = "subscription_count,user_count";
+// const res = await pusher.trigger("my-channel", "my-event", 
+//   {
+//   message: "hello world from Shivani"
+// },
+// {
+//   info: attributes,
+// }
+// );
+
+// if (res.status === 200) {
+//   const body = await res.json();
+//   const channelsInfo = body.channels;
+// }
+
+//const channels = ["my-channel-1", "my-channel-2", "my-channel-3"];
+
+pusher.trigger("my-channel", "my-event", 
+  {
+  message: "hello world from Shivani"
+}
+);
+
+//  pusher.trigger("presence-my-channel", "my-event", 
+//   {
+//   message: "hello world from Shivani presence"
+// }
+// );
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -76,3 +115,6 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`App is listening on port ${PORT} `)
 })
+
+
+
