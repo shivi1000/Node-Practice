@@ -91,7 +91,7 @@ const pusher = new Pusher({
 
 pusher.trigger("my-channel", "my-event", 
   {
-  message: "hello world from Shivani"
+  message: "hello world from Shivani >>>"
 }
 );
 
