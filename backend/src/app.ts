@@ -60,7 +60,7 @@ const options = {
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
-console.log(swaggerSpec)
+//console.log(swaggerSpec)
 
 const app = express();
 app.use(express.json());
