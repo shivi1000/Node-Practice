@@ -1,6 +1,9 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { middleware } from '../middleware/middleware.js';
+import { middleware } from '../middleware/auth.middleware.js';
 import { userController } from '../controller/user.controller.js';
+import { celebrate, Joi, Segments } from 'celebrate'; 
+import { CONST } from '../common/const.js';
+//Segments is a set of named constants (enum), that can be used to identify the different parts of a request like BODY, QUERY. HEADERS, PARAMS
 const router = express.Router();
 
 /**
@@ -95,6 +98,17 @@ const router = express.Router();
 
 
 router.post('/signup',
+    celebrate({   
+        [Segments.BODY]: Joi.object().keys({
+            name: Joi.string().max(15).required(),
+            email: Joi.string().required().email(),
+            countryCode: Joi.string().required(),
+            mobile: Joi.string().required(),
+            password: Joi.string().required(),
+            //status: Joi.number().valid(...Object.values(ENUM.STATUS)).required(),
+            //password: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")).required(),
+        }),
+    }),
     middleware.authentication,
     async (req: Request, res: Response, next: NextFunction) => {
         await userController.signup(req, res, next);
@@ -178,6 +192,13 @@ router.post('/signup',
  */
 
 router.post('/verify-otp',
+    celebrate({   
+        [Segments.BODY]: Joi.object().keys({
+            countryCode: Joi.string().required(),
+            mobile: Joi.string().required(),
+            otp: Joi.string().min(6).max(6).required(),
+        }),
+    }),
     middleware.authentication,
     async (req: Request, res: Response, next: NextFunction) => {
         await userController.verifyOtp(req, res, next);
@@ -263,6 +284,12 @@ router.post('/verify-otp',
 
 
 router.post('/login',
+    celebrate({   
+        [Segments.BODY]: Joi.object().keys({
+            email: Joi.string().required().email(),
+            password: Joi.string().required(),
+        }),
+    }),
     middleware.authentication,
     async (req: Request, res: Response, next: NextFunction) => {
         await userController.login(req, res, next);
@@ -324,6 +351,11 @@ router.post('/login',
 
 
 router.post('/forgotPassword',
+    celebrate({   
+        [Segments.BODY]: Joi.object().keys({
+            email: Joi.string().required().email(),
+        }),
+    }),
     middleware.authentication,
     async (req: Request, res: Response, next: NextFunction) => {
         await userController.forgotPassword(req, res, next);
@@ -390,6 +422,13 @@ router.post('/forgotPassword',
 
 
 router.post('/resetPassword',
+    celebrate({   
+        [Segments.BODY]: Joi.object().keys({
+            id:  Joi.string().regex(CONST.MONGODB_OBJECTID_REGEX).required(),
+            newPassword: Joi.string().required(),
+            confirmPassword: Joi.string().required(),
+        }),
+    }),
     middleware.authentication,
     async (req: Request, res: Response, next: NextFunction) => {
         await userController.resetPassword(req, res, next);
@@ -462,6 +501,12 @@ router.post('/resetPassword',
 
 
 router.post('/changePassword',
+    celebrate({ 
+        [Segments.BODY]: Joi.object().keys({
+            newPassword: Joi.string().required(),
+            confirmPassword: Joi.string().required(),
+        }),
+    }),
     middleware.verifyToken,
     async (req: Request, res: Response, next: NextFunction) => {
         await userController.changePassword(req, res, next);

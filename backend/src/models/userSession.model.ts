@@ -1,27 +1,24 @@
-import { model, Schema, SchemaTypes } from "mongoose";
+import mongoose, { Schema, SchemaTypes } from "mongoose";
 import { ENUM } from "../common/enum.js";
-import { IUserSession } from "../typings/user-session.typings.js";
 
 const deviceDetails = new Schema({
     deviceId: { type: SchemaTypes.String, trim: true },
     deviceToken: { type: SchemaTypes.String, trim: true },
-},{
+}, {
     _id: false,
     timestamps: false
 });
 
 
-export const UserSessionSchema = new Schema({
+const UserSessionSchema = new mongoose.Schema({
     userId: { type: SchemaTypes.ObjectId, required: true, index: true, ref: ENUM.COLLECTION.USER },
     deviceDetails: { type: deviceDetails, trim: true },
-    status: {type: SchemaTypes.Number, default: ENUM.STATUS.ACTIVE},
-    
+    status: { type: SchemaTypes.Number, default: ENUM.STATUS.ACTIVE },
+
 },
-{
-    versionKey: false,
-    collection: ENUM.COLLECTION.USER_SESSION,
-    timestamps: true
-}
+    {
+        timestamps: true
+    }
 )
 
-export default model<IUserSession>(ENUM.COLLECTION.USER_SESSION, UserSessionSchema);
+export default mongoose.model("user_session", UserSessionSchema);

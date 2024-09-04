@@ -39,13 +39,18 @@ class UserV1 {
         return data ;
     }
 
-    async changePassword(info: any, hashedPassword: any) {
-        const data = await User.findOneAndUpdate({ _id: info.userId}, { $set: {password: hashedPassword} }, { new: true });
+    async changePassword(payload: any, hashedPassword: any) {
+        const data = await User.findOneAndUpdate({ _id: payload.userId}, { $set: {password: hashedPassword} }, { new: true });
         return data ;
     }
 
-    async updateUser(info: any) {
-        const data = await User.findOneAndUpdate({ _id: info.userId}, { $set: {status: ENUM.STATUS.INACTIVE} }, { new: true });
+    async updateUser(payload: any) {
+        const data = await User.findOneAndUpdate({ _id: payload.userId}, { $set: {status: ENUM.STATUS.INACTIVE} }, { new: true });
+        return data ;
+    }
+
+    async findUserDetails(payload: any) {
+        const data = await User.findOne({ _id: payload.userId });
         return data ;
     }
 }

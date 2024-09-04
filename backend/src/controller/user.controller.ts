@@ -62,6 +62,7 @@ class UserController {
 
     async verifyOtp(req: Request, res: Response, next: NextFunction) {
         try {
+            const headers = req.headers;
             const { countryCode, mobile, otp } = req.body;
             const verifyResponses = await client.verify.v2
                 .services(appConfig.TWILIO_SERVICE_SID)
@@ -83,11 +84,9 @@ class UserController {
 
             const sessionPayload = {
                 userId: userData._id,
-                deviceDetails: req.headers
+                deviceDetails:  headers.deviceDetails
             }
-
             const createSession = await userSessionV1.createUserSession(sessionPayload)
-
             const tokenPayload = {
                 sessionId: createSession._id,
                 userId: userData._id,
@@ -105,6 +104,8 @@ class UserController {
 
     async login(req: Request, res: Response, next: NextFunction) {
         try {
+            const headers = req.headers;
+            console.log("headers", headers);
             const userData: any = await userV1.userExistsByEmail(req.body);
             if (!userData)
                 return res.status(404).json({ message: "This email does not exist. Please enter the registered email" })
@@ -115,7 +116,7 @@ class UserController {
 
             const sessionPayload = {
                 userId: userData._id,
-                deviceDetails: req.headers
+                deviceDetails: headers.deviceDetails
             }
 
             const createSession = await userSessionV1.createUserSession(sessionPayload)
@@ -212,10 +213,10 @@ class UserController {
     async details(req: Request, res: Response, next: NextFunction) {
         try {
             console.log("PPP", res.locals.data);
-            const data = res.locals.data;
-            if (data) {
+            const userDetails = await userV1.findUserDetails(res.locals.data);
+            if (userDetails) {
                 console.log("User details fetched successfully >>>>>>>>>>>");
-                return res.status(200).json({ message: 'User details fetched successfully', data: data });
+                return res.status(200).json({ message: 'User details fetched successfully', data: userDetails });
             } else {
                 return res.status(404).json({ message: "This user does not exist" });
             }
@@ -227,8 +228,8 @@ class UserController {
 
     async completeProfile(req: Request, res: Response, next: NextFunction) {
         try {
-            const userData = res.locals.data;
-            if (!userData)
+            const userDetails = await userV1.findUserDetails(res.locals.data);
+            if (!userDetails)
                 return res.status(404).json({ message: "This user does not exist" })
 
             const upload = multer({   // this is setting up the config of multer and configuring the middleware to handle a single file upload
@@ -263,8 +264,8 @@ class UserController {
 
     async logout(req: Request, res: Response, next: NextFunction) {
         try {
-            const userData = res.locals.data;
-            if (!userData) {
+            const userDetails = await userV1.findUserDetails(res.locals.data);
+            if (!userDetails) {
                 return res.status(400).json({ message: "This user does not exist" })
             } else {
                 await userV1.updateUser(res.locals.data);

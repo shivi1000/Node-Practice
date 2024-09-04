@@ -1,11 +1,14 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import BodyParser from 'body-parser';
 import { router as userRouter } from './routes/user.routes.js';
 import * as dotenv from "dotenv";
 import { appConfig } from './common/appConfig.js';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import errors from 'celebrate';
+import { errors as celebrateErrors } from 'celebrate';
 //import swaggerSpec from './swagger.json' with {type: 'json'};
 dotenv.config();
 
@@ -65,12 +68,31 @@ export const swaggerSpec = swaggerJsdoc(options);
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(BodyParser.json());
+//app.use(errors()); // to handle error only coming from celebrate
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/v1', userRouter);
 
 
 app.get('/', (req, res) => {
   res.status(200).send("Hello World!");
+});
+
+app.use(celebrateErrors());
+
+// Custom Error Handling Middleware for errors from celebrate
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  if (err.joi) {
+    return res.status(400).json({
+      status: 'fail',
+      message: err.joi.message,
+      details: err.joi.details,
+    });
+  }
+  return res.status(500).json({
+    status: 'error',
+    message: 'Internal Server Error',
+  });
 });
 
 app.listen(PORT, () => {
