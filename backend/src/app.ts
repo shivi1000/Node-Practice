@@ -7,8 +7,9 @@ import * as dotenv from "dotenv";
 import { appConfig } from './common/appConfig.js';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
-import errors from 'celebrate';
 import { errors as celebrateErrors } from 'celebrate';
+//import { redisClient } from './providers/redis/redis.connection.js';
+import { initializeRedisClient } from './providers/redis/redis.connection.js';
 //import swaggerSpec from './swagger.json' with {type: 'json'};
 dotenv.config();
 
@@ -69,6 +70,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(BodyParser.json());
+await initializeRedisClient()
+//await redisClient();
 //app.use(errors()); // to handle error only coming from celebrate
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/v1', userRouter);

@@ -21,5 +21,8 @@ export const appConfig = {
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
     AWS_S3_BUCKET_NAME: <string>process.env.AWS_S3_BUCKET_NAME,
     AWS_REGION: process.env.AWS_REGION,
+    REDIS_HOST: process.env.REDIS_HOST,
+    REDIS_PORT: process.env.REDIS_PORT,
+    REDIS_URL: process.env.REDIS_URL
 
 }
