@@ -11,12 +11,11 @@ import { errors as celebrateErrors } from 'celebrate';
 //import { redisClient } from './providers/redis/redis.connection.js';
 import { initializeRedisClient } from './providers/redis/redis.connection.js';
 //import swaggerSpec from './swagger.json' with {type: 'json'};
+//import { Session } from 'express-session';
 import session from 'express-session';
-//import connectRedis from 'connect-redis';
+import connectRedis from 'connect-redis';
 import RedisStore from "connect-redis"
 import './providers/firebase/firebase.connection.js';
-// const session = require('express-session');
-// const RedisStore = require('connect-redis')(session);
 dotenv.config();
 
 const connectionString = appConfig.MONGODB_URI as string;
@@ -70,7 +69,6 @@ const options = {
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
-//console.log(swaggerSpec)
 
 //const RedisStore = new connectRedis(session);
 let redisStore = new RedisStore({
@@ -90,6 +88,11 @@ app.use(session({
     saveUninitialized: false,
   }),
 )
+
+// export interface ISession extends Session {
+//   name?: string;
+//   email?: string;
+// }
 //await redisClient();
 //app.use(errors()); // to handle error only coming from celebrate
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

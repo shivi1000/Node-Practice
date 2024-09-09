@@ -13,8 +13,8 @@ import AWS from 'aws-sdk';
 import { S3Client } from '@aws-sdk/client-s3';
 import userV1 from '../entity/userV1.entity.js';
 import { userSessionV1 } from '../entity/userSessionV1.entity.js';
-import { firebaseManager } from '../providers/firebase/firebase.manager.js';
-import { ENUM } from '../common/enum.js';
+// import { firebaseManager } from '../providers/firebase/firebase.manager.js';
+// import { ENUM } from '../common/enum.js';
 
 const client = twilio(appConfig.TWILIO_ACCOUNT_SID, appConfig.TWILIO_AUTH_TOKEN, { lazyLoading: true })
 
@@ -84,12 +84,12 @@ class UserController {
                 }
             }
             const updatedData = await userV1.updateUserDetails(mobile, payload)
-            console.log("]]]]]]]]]]]]]]]]]]",updatedData);
-            const fbData = await firebaseManager.addData(ENUM.COLLECTION.USER, userData._id.toString(),  updatedData);
-            console.log("??????????????????",fbData);
+            console.log("]]]]]]]]]]]",updatedData);
+            // const fbData = await firebaseManager.addData(ENUM.COLLECTION.USER, userData._id.toString(),  updatedData);
+            // console.log("??????????????????",fbData);
 
-            //console.log("req.session>>>>>>>", req.session.id);
-            //req.session.name = userData._id
+            console.log("req.session>>>>>>>", req.session);
+            //req.session.name = userData.name;
             //res.send('Session data set successfully!');
 
             const sessionPayload = {
@@ -112,7 +112,7 @@ class UserController {
         }
     }
 
-    async login(req: Request, res: Response, next: NextFunction) {
+    async login(req: Request, res: Response, next: NextFunction) { //multi-device login
         try {
             const headers = req.headers;
             console.log("headers", headers);
@@ -124,9 +124,9 @@ class UserController {
             if (!passwordMatch)
                 return res.status(401).json({ message: "Incorrect password" })
 
-            console.log("req.session>>>>>>>", req.session.id);
-            req.session.id = userData._id
-            res.send('Session data set successfully!');
+            // console.log("req.session>>>>>>>", req.session.id);
+            // req.session.id = userData._id
+            // res.send('Session data set successfully!');
             const sessionPayload = {
                 userId: userData._id,
                 deviceDetails: headers.deviceDetails

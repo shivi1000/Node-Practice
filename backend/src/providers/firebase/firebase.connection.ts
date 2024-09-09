@@ -10,7 +10,7 @@ class FirebaseModule {
       admin.initializeApp({
         credential: admin.credential.cert(resolve(process.cwd(), "firebase.json")),
       })
-    //}
+      //}
       console.log("+++++++++++++ Firebase Initialized! +++++++++++++++++++++++++");
     } catch (error) {
       console.log("Firebase admin initialization error >>>>>>>>>>>", error);
