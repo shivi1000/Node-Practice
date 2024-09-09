@@ -54,5 +54,5 @@ class UserV1 {
         return data ;
     }
 }
-
-export const userV1 = new UserV1();
+const userV1 = new UserV1();
+export default userV1;

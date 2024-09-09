@@ -4,13 +4,12 @@ import { createClient } from "redis";
 
 export async function initializeRedisClient() {
 
-    let redisClient = undefined;
-    // create the Redis client object
+    // let redisClient = undefined;
+    let redisClient;
     redisClient = createClient({ url: appConfig.REDIS_URL }).on("error", (e: any) => {
         console.error(`Failed to create the Redis client with error:`);
         console.error(e);
     });
-
     try {
         await redisClient.connect();
         console.log(`<<<<<<<<<< Connected to Redis successfully! >>>>>>>>>>>>>>`);
@@ -20,21 +19,16 @@ export async function initializeRedisClient() {
     }
 }
 
-// export async function redisClient() {
 
+// export async function redisClient() {
 // const client = redis.createClient({
 //   url: appConfig.REDIS_URL,
 // });
-
 // client.on('error', (err) => {
 //   console.error('Redis connection error:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', err); 
 // });
-
 // // If the connection is successful
 // client.on('connect', () => {
 //   console.log('<<<<<<<<<<< Connected to Redis >>>>>>>>>>>>>>>>>>>>>');
 // });
 // }
-
-// If authentication is required, use the 'auth' method on the client
-//client.auth('your-redis-password');

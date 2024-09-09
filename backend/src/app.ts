@@ -11,6 +11,12 @@ import { errors as celebrateErrors } from 'celebrate';
 //import { redisClient } from './providers/redis/redis.connection.js';
 import { initializeRedisClient } from './providers/redis/redis.connection.js';
 //import swaggerSpec from './swagger.json' with {type: 'json'};
+import session from 'express-session';
+//import connectRedis from 'connect-redis';
+import RedisStore from "connect-redis"
+import './providers/firebase/firebase.connection.js';
+// const session = require('express-session');
+// const RedisStore = require('connect-redis')(session);
 dotenv.config();
 
 const connectionString = appConfig.MONGODB_URI as string;
@@ -19,7 +25,7 @@ const PORT = appConfig.APP_PORT || 8008;
 async function connectToMongoDB(uri: string) {
   try {
     await mongoose.connect(uri);
-    console.log("Connected to MongoDB Database");
+    console.log("============== Connected to MongoDB Database =============");
   } catch (error) {
     console.error("Error in connecting to MongoDB Database:", error);
   }
@@ -49,9 +55,9 @@ const options = {
           bearerFormat: 'JWT'
         },
         basicAuth: {
-        type: "http",
-        scheme: "basic"
-      }
+          type: "http",
+          scheme: "basic"
+        }
       },
     },
     security: [
@@ -66,11 +72,24 @@ const options = {
 export const swaggerSpec = swaggerJsdoc(options);
 //console.log(swaggerSpec)
 
+//const RedisStore = new connectRedis(session);
+let redisStore = new RedisStore({
+  client: initializeRedisClient,
+  prefix: "nodePractice:",
+})
+
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(BodyParser.json());
 await initializeRedisClient()
+app.use(session({
+    store: redisStore,
+    secret: appConfig.REDIS_SECRET,
+    resave: false,
+    saveUninitialized: false,
+  }),
+)
 //await redisClient();
 //app.use(errors()); // to handle error only coming from celebrate
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

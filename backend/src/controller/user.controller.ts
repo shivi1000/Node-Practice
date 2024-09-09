@@ -11,8 +11,10 @@ import multer from 'multer';
 import multerS3 from 'multer-s3';
 import AWS from 'aws-sdk';
 import { S3Client } from '@aws-sdk/client-s3';
-import { userV1 } from '../entity/userV1.entity.js';
+import userV1 from '../entity/userV1.entity.js';
 import { userSessionV1 } from '../entity/userSessionV1.entity.js';
+import { firebaseManager } from '../providers/firebase/firebase.manager.js';
+import { ENUM } from '../common/enum.js';
 
 const client = twilio(appConfig.TWILIO_ACCOUNT_SID, appConfig.TWILIO_AUTH_TOKEN, { lazyLoading: true })
 
@@ -63,6 +65,9 @@ class UserController {
     async verifyOtp(req: Request, res: Response, next: NextFunction) {
         try {
             const headers = req.headers;
+            const userData: any = await userV1.userExistsByMobile(req.body.mobile);
+            if (!userData)
+                return res.status(404).json({ message: "This user does not exist" })
             const { countryCode, mobile, otp } = req.body;
             const verifyResponses = await client.verify.v2
                 .services(appConfig.TWILIO_SERVICE_SID)
@@ -78,9 +83,14 @@ class UserController {
                     isOtpVerified: true
                 }
             }
-            await userV1.updateUserDetails(mobile, payload)
+            const updatedData = await userV1.updateUserDetails(mobile, payload)
+            console.log("]]]]]]]]]]]]]]]]]]",updatedData);
+            const fbData = await firebaseManager.addData(ENUM.COLLECTION.USER, userData._id.toString(),  updatedData);
+            console.log("??????????????????",fbData);
 
-            const userData: any = await userV1.userExistsByMobile(mobile);
+            //console.log("req.session>>>>>>>", req.session.id);
+            //req.session.name = userData._id
+            //res.send('Session data set successfully!');
 
             const sessionPayload = {
                 userId: userData._id,
@@ -114,6 +124,9 @@ class UserController {
             if (!passwordMatch)
                 return res.status(401).json({ message: "Incorrect password" })
 
+            console.log("req.session>>>>>>>", req.session.id);
+            req.session.id = userData._id
+            res.send('Session data set successfully!');
             const sessionPayload = {
                 userId: userData._id,
                 deviceDetails: headers.deviceDetails
