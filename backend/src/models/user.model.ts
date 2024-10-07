@@ -11,6 +11,8 @@ const UserSchema = new mongoose.Schema({
     otp: { type: SchemaTypes.Number },
     isOtpVerified: { type: SchemaTypes.Boolean },
     status: { type: SchemaTypes.Number, default: ENUM.STATUS.ACTIVE },
+    loginCount: { type: SchemaTypes.Number, default: 0 },
+    isPrimaryAccountHolder: { type: SchemaTypes.Boolean, default: true },
 },
     {
         timestamps: true

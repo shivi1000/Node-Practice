@@ -13,6 +13,9 @@ import AWS from 'aws-sdk';
 import { S3Client } from '@aws-sdk/client-s3';
 import userV1 from '../entity/userV1.entity.js';
 import { userSessionV1 } from '../entity/userSessionV1.entity.js';
+import User from '../models/user.model.js';
+import UserSession from '../models/userSession.model.js';
+import { ENUM } from '../common/enum.js';
 // import { firebaseManager } from '../providers/firebase/firebase.manager.js';
 // import { ENUM } from '../common/enum.js';
 
@@ -64,7 +67,10 @@ class UserController {
 
     async verifyOtp(req: Request, res: Response, next: NextFunction) {
         try {
-            const headers = req.headers;
+            const deviceDetails = {
+                deviceId: req.query.deviceId,
+                deviceToken: req.query.deviceToken
+            }
             const userData: any = await userV1.userExistsByMobile(req.body.mobile);
             if (!userData)
                 return res.status(404).json({ message: "This user does not exist" })
@@ -84,17 +90,17 @@ class UserController {
                 }
             }
             const updatedData = await userV1.updateUserDetails(mobile, payload)
-            console.log("]]]]]]]]]]]",updatedData);
+            //console.log("]]]]]]]]]]]",updatedData);
             // const fbData = await firebaseManager.addData(ENUM.COLLECTION.USER, userData._id.toString(),  updatedData);
             // console.log("??????????????????",fbData);
 
-            console.log("req.session>>>>>>>", req.session);
+            //console.log("req.session>>>>>>>", req.session);
             //req.session.name = userData.name;
             //res.send('Session data set successfully!');
 
             const sessionPayload = {
                 userId: userData._id,
-                deviceDetails:  headers.deviceDetails
+                deviceDetails: deviceDetails
             }
             const createSession = await userSessionV1.createUserSession(sessionPayload)
             const tokenPayload = {
@@ -112,39 +118,60 @@ class UserController {
         }
     }
 
-    async login(req: Request, res: Response, next: NextFunction) { //multi-device login
+    async login(req: Request, res: Response, next: NextFunction) { // multi-device login
         try {
-            const headers = req.headers;
-            console.log("headers", headers);
             const userData: any = await userV1.userExistsByEmail(req.body);
             if (!userData)
-                return res.status(404).json({ message: "This email does not exist. Please enter the registered email" })
-
-            const passwordMatch = await bcrypt.compare(req.body.password, userData.password)
+                return res.status(404).json({ message: "This email does not exist. Please enter the registered email" });
+            const passwordMatch = await bcrypt.compare(req.body.password, userData.password);
             if (!passwordMatch)
                 return res.status(401).json({ message: "Incorrect password" })
+            if (userData.loginCount != 3) {
+                const deviceDetails = {
+                    deviceId: req.query.deviceId,
+                    deviceToken: req.query.deviceToken
+                }
+                // console.log("req.session>>>>>>>", req.session.id);
+                // req.session.id = userData._id
+                // res.send('Session data set successfully!');
+                const sessionPayload = {
+                    userId: userData._id,
+                    deviceDetails: deviceDetails
+                }
+                const createSession = await userSessionV1.createUserSession(sessionPayload);
+                const tokenPayload = {
+                    sessionId: createSession._id,
+                    userId: userData._id,
+                    name: userData.name,
+                    email: userData.email
+                }
+                const token = jwt.sign(tokenPayload, appConfig.JWT_SECRET_KEY, { expiresIn: CONST.EXPIRY_JWT_TOKEN });
+                await User.updateOne({ email: req.body.email }, { $inc: { loginCount: +1 } });
+                return res.status(200).json({ message: "Logged In Successfully", data: token });
+            } else if (userData.isPrimaryAccountHolder == true) {
+                const allDeviceData = await UserSession.find({ userId: userData._id });
+                // primary account holder can logout any user
+                await UserSession.findOneAndUpdate({ _id: allDeviceData[0]._id }, { $set: { status: ENUM.STATUS.LOGOUT } }, { new: true });
+                await User.updateOne({ email: req.body.email }, { $inc: { loginCount: -1 } });
+                return res.status(400).json({ message: "Primary Account Holder successfully logout the secondary user." });
+            } else {
+                const userSessionData = await UserSession.find({ userId: userData._id, status: ENUM.STATUS.INACTIVE });
+                if (!userSessionData) return res.status(400).json({ message: "Sorry, all screens are busy." });
+                const sessionToLogout = userSessionData[0].lastRecentActivity < userSessionData[1].lastRecentActivity ? userSessionData[1] : userSessionData[0]
+                await UserSession.findOneAndUpdate({ _id: sessionToLogout._id }, { $set: { status: ENUM.STATUS.LOGOUT } }, { new: true });
+                await User.updateOne({ email: req.body.email }, { $inc: { loginCount: -1 } });
+                return res.status(400).json({ message: "Successful in logging out user who have been idle for the longest time" });
 
-            // console.log("req.session>>>>>>>", req.session.id);
-            // req.session.id = userData._id
-            // res.send('Session data set successfully!');
-            const sessionPayload = {
-                userId: userData._id,
-                deviceDetails: headers.deviceDetails
+                // if (userSessionData[0].lastRecentActivity < userSessionData[1].lastRecentActivity) {
+                //     await UserSession.findOneAndUpdate({ _id: userSessionData[1]._id }, { $set: { status: ENUM.STATUS.LOGOUT } }, { new: true });
+                //     await User.updateOne({ email: req.body.email }, { $inc: { loginCount: -1 } });
+                // } else {
+                //     await UserSession.findOneAndUpdate({ _id: userSessionData[0]._id }, { $set: { status: ENUM.STATUS.LOGOUT } }, { new: true });
+                //     await User.updateOne({ email: req.body.email }, { $inc: { loginCount: -1 } });
+                // }
             }
-
-            const createSession = await userSessionV1.createUserSession(sessionPayload)
-
-            const tokenPayload = {
-                sessionId: createSession._id,
-                userId: userData._id,
-                name: userData.name,
-                email: userData.email
-            }
-            const token = jwt.sign(tokenPayload, appConfig.JWT_SECRET_KEY, { expiresIn: CONST.EXPIRY_JWT_TOKEN });
-
-            return res.status(200).json({ message: "Logged In Successfully", data: token });
         } catch (error) {
-            console.log("Error while fetching user >>>>>>>>>>>", error);
+            console.log("Error while user login >>>>>>>>>>>", error);
             throw error;
         }
     }

@@ -198,6 +198,10 @@ router.post('/verify-otp',
             mobile: Joi.string().required(),
             otp: Joi.string().min(6).max(6).required(),
         }),
+        [Segments.QUERY]: Joi.object().keys({
+            deviceId: Joi.string().required(),
+            deviceToken: Joi.string().required(),
+        }),
     }),
     middleware.authentication,
     async (req: Request, res: Response, next: NextFunction) => {
@@ -288,6 +292,10 @@ router.post('/login',
         [Segments.BODY]: Joi.object().keys({
             email: Joi.string().required().email(),
             password: Joi.string().required(),
+        }),
+        [Segments.QUERY]: Joi.object().keys({
+            deviceId: Joi.string().required(),
+            deviceToken: Joi.string().required(),
         }),
     }),
     middleware.authentication,

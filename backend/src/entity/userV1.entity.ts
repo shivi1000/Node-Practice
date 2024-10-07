@@ -45,7 +45,7 @@ class UserV1 {
     }
 
     async updateUser(payload: any) {
-        const data = await User.findOneAndUpdate({ _id: payload.userId}, { $set: {status: ENUM.STATUS.INACTIVE} }, { new: true });
+        const data = await User.findOneAndUpdate({ _id: payload.userId}, { $set: {status: ENUM.STATUS.LOGOUT} }, { new: true });
         return data ;
     }
 

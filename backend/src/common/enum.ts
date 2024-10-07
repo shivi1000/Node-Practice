@@ -3,8 +3,15 @@ export const ENUM = {
     STATUS: {
         ACTIVE: 1,
         INACTIVE: 2,
-        BLOCKED: 3,
-        DELETED: 4
+        LOGOUT: 3,
+        BLOCKED: 4,
+        DELETED: 5,
+        
+    },
+
+    USER_SESSION_STATUS: {
+        ACTIVE: 1,
+        INACTIVE: 2
     },
 
     COLLECTION: {

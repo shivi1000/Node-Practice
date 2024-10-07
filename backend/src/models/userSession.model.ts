@@ -14,6 +14,7 @@ const UserSessionSchema = new mongoose.Schema({
     userId: { type: SchemaTypes.ObjectId, required: true, index: true, ref: ENUM.COLLECTION.USER },
     deviceDetails: { type: deviceDetails, trim: true },
     status: { type: SchemaTypes.Number, default: ENUM.STATUS.ACTIVE },
+    lastRecentActivity: { type: SchemaTypes.Date, default: new Date()}
 
 },
     {
