@@ -16,6 +16,7 @@ import session from 'express-session';
 import connectRedis from 'connect-redis';
 import RedisStore from "connect-redis"
 import './providers/firebase/firebase.connection.js';
+import { notificationRouter } from './routes/notification.routes.js';
 dotenv.config();
 
 const connectionString = appConfig.MONGODB_URI as string;
@@ -42,7 +43,7 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:8008/api/v1',
+        url: 'http://localhost:8008/api/v1',       // http://localhost:8008/api-docs/#/
         description: 'Development server',
       }
     ],
@@ -65,7 +66,7 @@ const options = {
       }
     ]
   },
-  apis: ['./dist/routes/user.routes.js'],
+  apis: ['./dist/routes/user.routes.js','./dist/routes/notification.routes.js'],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
@@ -97,6 +98,7 @@ app.use(session({
 //app.use(errors()); // to handle error only coming from celebrate
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/v1', userRouter);
+app.use('/api/v1/notification', notificationRouter);
 
 
 app.get('/', (req, res) => {

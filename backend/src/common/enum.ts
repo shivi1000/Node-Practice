@@ -14,6 +14,11 @@ export const ENUM = {
         INACTIVE: 2
     },
 
+    NOTIFICATION_STATUS: {
+        SENT: 1,
+        DRAFT: 2
+    },
+
     COLLECTION: {
         USER: 'users',
         USER_SESSION: 'user_session'
