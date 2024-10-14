@@ -11,7 +11,7 @@ class NotificationController {
     async sendNotification(req: Request, res: Response, next: NextFunction) {
         try {
 
-            const senderDetails = await userV1.findUserDetails(res.locals.data);
+            const senderDetails = await userV1.findUserDetails(res.locals.data.userId);
             if (!senderDetails)
                 return res.status(404).json({ message: "This sender does not exist" })
 
@@ -63,9 +63,10 @@ class NotificationController {
         }
     }
 
+
     async listing(req: Request, res: Response, next: NextFunction) {
         try {
-            const data = await userV1.findUserDetails(res.locals.data);
+            const data = await userV1.findUserDetails(res.locals.data.userId);
             if (data) {
                 let notificationDetails;
                 if (req.query.notificationId) {

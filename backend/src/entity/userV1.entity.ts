@@ -49,8 +49,8 @@ class UserV1 {
         return data ;
     }
 
-    async findUserDetails(payload: any) {
-        const data = await User.findOne({ _id: payload.userId });
+    async findUserDetails(userId: any) {
+        const data = await User.findOne({ _id: userId });
         return data ;
     }
 }
