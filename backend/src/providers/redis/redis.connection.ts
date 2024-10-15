@@ -1,6 +1,5 @@
 import { appConfig } from '../../common/appConfig.js';
 import { createClient } from "redis";
-//import redis from 'redis';
 
 export async function initializeRedisClient() {
 
@@ -17,16 +16,3 @@ export async function initializeRedisClient() {
         console.error(error);
     }
 }
-
-// export async function redisClient() {
-// const client = redis.createClient({
-//   url: appConfig.REDIS_URL,
-// });
-// client.on('error', (err) => {
-//   console.error('Redis connection error:>>>>>>>>>>>>>>', err); 
-// });
-// // If the connection is successful
-// client.on('connect', () => {
-//   console.log('<<<<<<<< Connected to Redis >>>>>>>>>>>>>');
-// });
-// }
