@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { middleware } from '../middleware/auth.middleware.js';
 import { userController } from '../controller/user.controller.js';
-import { celebrate, Joi, Segments } from 'celebrate'; 
+import { celebrate, Joi, Segments } from 'celebrate';
 import { CONST } from '../common/const.js';
 //Segments is a set of named constants (enum), that can be used to identify the different parts of a request like BODY, QUERY. HEADERS, PARAMS
 const router = express.Router();
@@ -98,7 +98,10 @@ const router = express.Router();
 
 
 router.post('/signup',
-    celebrate({   
+    celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Basic [a-zA-Z0-9+/=]+$/)
+        }).unknown(),
         [Segments.BODY]: Joi.object().keys({
             name: Joi.string().max(15).required(),
             email: Joi.string().required().email(),
@@ -192,7 +195,10 @@ router.post('/signup',
  */
 
 router.post('/verify-otp',
-    celebrate({   
+    celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Basic [a-zA-Z0-9+/=]+$/)
+        }).unknown(),
         [Segments.BODY]: Joi.object().keys({
             countryCode: Joi.string().required(),
             mobile: Joi.string().required(),
@@ -288,7 +294,10 @@ router.post('/verify-otp',
 
 
 router.post('/login',
-    celebrate({   
+    celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Basic [a-zA-Z0-9+/=]+$/)
+        }).unknown(),
         [Segments.BODY]: Joi.object().keys({
             email: Joi.string().required().email(),
             password: Joi.string().required(),
@@ -359,7 +368,10 @@ router.post('/login',
 
 
 router.post('/forgotPassword',
-    celebrate({   
+    celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Basic [a-zA-Z0-9+/=]+$/)
+        }).unknown(),
         [Segments.BODY]: Joi.object().keys({
             email: Joi.string().required().email(),
         }),
@@ -430,9 +442,12 @@ router.post('/forgotPassword',
 
 
 router.post('/resetPassword',
-    celebrate({   
+    celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Basic [a-zA-Z0-9+/=]+$/)
+        }).unknown(),
         [Segments.BODY]: Joi.object().keys({
-            id:  Joi.string().regex(CONST.MONGODB_OBJECTID_REGEX).required(),
+            id: Joi.string().regex(CONST.MONGODB_OBJECTID_REGEX).required(),
             newPassword: Joi.string().required(),
             confirmPassword: Joi.string().required(),
         }),
@@ -509,7 +524,10 @@ router.post('/resetPassword',
 
 
 router.post('/changePassword',
-    celebrate({ 
+    celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Bearer [a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+$/)
+        }).unknown(),
         [Segments.BODY]: Joi.object().keys({
             newPassword: Joi.string().required(),
             confirmPassword: Joi.string().required(),
@@ -565,6 +583,11 @@ router.post('/changePassword',
 
 
 router.get('/details',
+    celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Bearer [a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+$/)
+        }).unknown(),
+    }),
     middleware.verifyToken,
     async (req: Request, res: Response, next: NextFunction) => {
         await userController.details(req, res, next);
@@ -625,6 +648,11 @@ router.get('/details',
  */
 
 router.put('/completeProfile',
+    celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Bearer [a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+$/)
+        }).unknown(),
+    }),
     middleware.verifyToken,
     //upload.single('profileImage'),
     async (req: Request, res: Response, next: NextFunction) => {
@@ -673,6 +701,11 @@ router.put('/completeProfile',
 
 
 router.post('/logout',
+    celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Bearer [a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+$/)
+        }).unknown(),
+    }),
     middleware.verifyToken,
     async (req: Request, res: Response, next: NextFunction) => {
         await userController.logout(req, res, next);

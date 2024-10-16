@@ -21,7 +21,8 @@ export const ENUM = {
 
     COLLECTION: {
         USER: 'users',
-        USER_SESSION: 'user_session'
+        USER_SESSION: 'user_session',
+        NOTIFICATION: 'notifications'
     }
 
 }

@@ -90,6 +90,9 @@ const notificationRouter = express.Router();
 
 notificationRouter.post('/send',
     celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Bearer [a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+$/)
+        }).unknown(),
         [Segments.BODY]: Joi.object().keys({
             title: Joi.string().required(),
             description: Joi.string().required(),
@@ -156,7 +159,10 @@ notificationRouter.post('/send',
 
 
 notificationRouter.get('/list',
-    celebrate({   
+    celebrate({
+        [Segments.HEADERS]: Joi.object().keys({
+            authorization: Joi.string().required().regex(/^Bearer [a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+$/)
+        }).unknown(),
         [Segments.QUERY]: Joi.object().keys({
             notificationId: Joi.string().optional(),
         }),
