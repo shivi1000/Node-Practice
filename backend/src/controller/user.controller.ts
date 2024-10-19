@@ -33,8 +33,8 @@ class UserController {
 
     async signup(req: Request, res: Response, next: NextFunction) {
         try {
-            const userData = await userV1.userExistsByEmail(req.body);
-            if (userData)
+            const userByEmail = await userV1.findOneByQuery({ email: req.body.email });
+            if (userByEmail)
                 return res.status(404).json({ message: "This email already exists" })
 
             const hashedPassword: string = await bcrypt.hash(req.body.password, CONST.saltRounds)
@@ -71,8 +71,8 @@ class UserController {
                 deviceId: req.query.deviceId,
                 deviceToken: req.query.deviceToken
             }
-            const userData: any = await userV1.userExistsByMobile(req.body.mobile);
-            if (!userData)
+            const userByMobile = await userV1.findOneByQuery({ mobile: req.body.mobile });
+            if (!userByMobile)
                 return res.status(404).json({ message: "This user does not exist" })
             const { countryCode, mobile, otp } = req.body;
             const verifyResponses = await client.verify.v2
@@ -89,7 +89,7 @@ class UserController {
                     isOtpVerified: true
                 }
             }
-            const updatedData = await userV1.updateUserDetails(mobile, payload)
+            await userV1.findOneAndUpdateUserByQuery({ mobile: mobile }, payload);
             //console.log("]]]]]]]]]]]",updatedData);
             // const fbData = await firebaseManager.addData(ENUM.COLLECTION.USER, userData._id.toString(),  updatedData);
             // console.log("??????????????????",fbData);
@@ -99,15 +99,15 @@ class UserController {
             //res.send('Session data set successfully!');
 
             const sessionPayload = {
-                userId: userData._id,
+                userId: userByMobile._id,
                 deviceDetails: deviceDetails
             }
             const createSession = await userSessionV1.createUserSession(sessionPayload)
             const tokenPayload = {
                 sessionId: createSession._id,
-                userId: userData._id,
-                name: userData.name,
-                email: userData.email
+                userId: userByMobile._id,
+                name: userByMobile.name,
+                email: userByMobile.email
             }
             const token = jwt.sign(tokenPayload, appConfig.JWT_SECRET_KEY, { expiresIn: CONST.EXPIRY_JWT_TOKEN });
 
@@ -120,45 +120,45 @@ class UserController {
 
     async login(req: Request, res: Response, next: NextFunction) { // multi-device login
         try {
-            const userData: any = await userV1.userExistsByEmail(req.body);
-            if (!userData)
+            const userByEmail = await userV1.findOneByQuery({ email: req.body.email });
+            if (!userByEmail)
                 return res.status(404).json({ message: "This email does not exist. Please enter the registered email" });
-            const passwordMatch = await bcrypt.compare(req.body.password, userData.password);
+            const passwordMatch = await bcrypt.compare(req.body.password, userByEmail.password);
             if (!passwordMatch)
                 return res.status(401).json({ message: "Incorrect password" })
-            if (userData.loginCount != 3) {
+            if (userByEmail.loginCount != 3) {
                 const deviceDetails = {
                     deviceId: req.query.deviceId,
                     deviceToken: req.query.deviceToken
                 }
                 // console.log("req.session>>>>>>>", req.session.id);
-                // req.session.id = userData._id
+                // req.session.id = userByEmail._id
                 // res.send('Session data set successfully!');
                 const sessionPayload = {
-                    userId: userData._id,
+                    userId: userByEmail._id,
                     deviceDetails: deviceDetails
                 }
                 const createSession = await userSessionV1.createUserSession(sessionPayload);
                 const tokenPayload = {
                     sessionId: createSession._id,
-                    userId: userData._id,
-                    name: userData.name,
-                    email: userData.email
+                    userId: userByEmail._id,
+                    name: userByEmail.name,
+                    email: userByEmail.email
                 }
                 const token = jwt.sign(tokenPayload, appConfig.JWT_SECRET_KEY, { expiresIn: CONST.EXPIRY_JWT_TOKEN });
                 await User.updateOne({ email: req.body.email }, { $inc: { loginCount: +1 } });
                 return res.status(200).json({ message: "Logged In Successfully", data: token });
-            } else if (userData.isPrimaryAccountHolder == true) {
-                const allDeviceData = await UserSession.find({ userId: userData._id });
+            } else if (userByEmail.isPrimaryAccountHolder == true) {
+                const allDeviceData = await UserSession.find({ userId: userByEmail._id });
                 // primary account holder can logout any user
-                await UserSession.findOneAndUpdate({ _id: allDeviceData[0]._id }, { $set: { status: ENUM.STATUS.LOGOUT } }, { new: true });
+                await UserSession.findOneAndUpdate({ _id: allDeviceData[0]._id }, { $set: { status: ENUM.STATUS.INACTIVE } }, { new: true });
                 await User.updateOne({ email: req.body.email }, { $inc: { loginCount: -1 } });
                 return res.status(400).json({ message: "Primary Account Holder successfully logout the secondary user." });
             } else {
-                const userSessionData = await UserSession.find({ userId: userData._id, status: ENUM.STATUS.INACTIVE });
+                const userSessionData = await UserSession.find({ userId: userByEmail._id, status: ENUM.STATUS.INACTIVE });
                 if (!userSessionData) return res.status(400).json({ message: "Sorry, all screens are busy." });
                 const sessionToLogout = userSessionData[0].lastRecentActivity < userSessionData[1].lastRecentActivity ? userSessionData[1] : userSessionData[0]
-                await UserSession.findOneAndUpdate({ _id: sessionToLogout._id }, { $set: { status: ENUM.STATUS.LOGOUT } }, { new: true });
+                await UserSession.findOneAndUpdate({ _id: sessionToLogout._id }, { $set: { status: ENUM.STATUS.INACTIVE } }, { new: true });
                 await User.updateOne({ email: req.body.email }, { $inc: { loginCount: -1 } });
                 return res.status(400).json({ message: "Successful in logging out user who have been idle for the longest time" });
 
@@ -178,8 +178,8 @@ class UserController {
 
     async forgotPassword(req: Request, res: Response, next: NextFunction) {
         try {
-            const userData = await userV1.userExistsByEmail(req.body);
-            if (!userData)
+            const userByEmail = await userV1.findOneByQuery({ email: req.body.email });
+            if (!userByEmail)
                 return res.status(400).json({ message: "This email does not exists" })
             const transporter = nodemailer.createTransport({
                 service: appConfig.SERVICE,
@@ -192,7 +192,7 @@ class UserController {
                 },
             });
             const htmlTemplatePath = path.join(CONST.EMAIL_TEMPLATES);
-            const html = await htmlTemplateMaker.makeHtmlTemplate(htmlTemplatePath, userData.name);
+            const html = await htmlTemplateMaker.makeHtmlTemplate(htmlTemplatePath, userByEmail.name);
             await transporter.sendMail({
                 from: appConfig.EMAIL,
                 to: req.body.email,
@@ -201,7 +201,7 @@ class UserController {
                 html: html
             });
 
-            return res.status(200).json({ message: "Mail sent successfully", data: userData._id })
+            return res.status(200).json({ message: "Mail sent successfully", data: userByEmail._id })
         } catch (error) {
             console.log("Error while forgot Password >>>>>>>>>>>", error);
             throw error;
@@ -210,17 +210,17 @@ class UserController {
 
     async resetPassword(req: Request, res: Response, next: NextFunction) {
         try {
-            const userData = await userV1.findUserById(req.body);
-            if (!userData)
+            const userById = await userV1.findOneByQuery({ _id: req.body.id });
+            if (!userById)
                 return res.status(400).json({ message: "This user does not exist" })
             const hashedPassword: string = await bcrypt.hash(req.body.newPassword, CONST.saltRounds)
-            if (hashedPassword == userData.password) {
+            if (hashedPassword == userById.password) {
                 return res.status(400).json({ message: "New password can not be same as of old password" });
             }
             if (req.body.newPassword != req.body.confirmPassword) {
                 return res.status(400).json({ message: "Confirm password does not match with new password" });
             } else {
-                await userV1.updatePassword(userData, hashedPassword);
+                await userV1.findOneAndUpdateUserByQuery({ _id: userById }, { password: hashedPassword });
 
                 return res.status(200).json({ message: "Password reset successfully" });
             }
@@ -234,13 +234,14 @@ class UserController {
         try {
             const hashedPassword: string = await bcrypt.hash(req.body.newPassword, CONST.saltRounds)
             const userData = res.locals.data;
+            console.log("userData", userData);
             if (hashedPassword == userData.password) {
                 return res.status(400).json({ message: "New password can not be same as of old password" });
             }
             if (req.body.newPassword != req.body.confirmPassword) {
                 return res.status(400).json({ message: "Confirm password does not match with new password" });
             } else {
-                await userV1.changePassword(userData, hashedPassword);
+                await userV1.findOneAndUpdateUserByQuery({ _id: userData.userId }, { password: hashedPassword });
 
                 return res.status(200).json({ message: "Password changed successfully" });
             }
@@ -253,7 +254,7 @@ class UserController {
     async details(req: Request, res: Response, next: NextFunction) {
         try {
             console.log("PPP", res.locals.data);
-            const userDetails = await userV1.findUserDetails(res.locals.data);
+            const userDetails = await userV1.findOneByQuery({ _id: res.locals.data.userId });
             if (userDetails) {
                 console.log("User details fetched successfully >>>>>>>>>>>");
                 return res.status(200).json({ message: 'User details fetched successfully', data: userDetails });
@@ -268,7 +269,7 @@ class UserController {
 
     async completeProfile(req: Request, res: Response, next: NextFunction) {
         try {
-            const userDetails = await userV1.findUserDetails(res.locals.data);
+            const userDetails = await userV1.findOneByQuery({ _id: res.locals.data.userId });
             if (!userDetails)
                 return res.status(404).json({ message: "This user does not exist" })
 
@@ -304,11 +305,11 @@ class UserController {
 
     async logout(req: Request, res: Response, next: NextFunction) {
         try {
-            const userDetails = await userV1.findUserDetails(res.locals.data);
+            const userDetails = await userV1.findOneByQuery({ _id: res.locals.data.userId });
             if (!userDetails) {
                 return res.status(400).json({ message: "This user does not exist" })
             } else {
-                await userV1.updateUser(res.locals.data);
+                await userV1.findOneAndUpdateUserByQuery({ _id: res.locals.data.userId }, { status: ENUM.STATUS.INACTIVE });
                 console.log("User logout Successfully >>>>>>>>>>>>>>>>");
 
                 return res.status(200).json({ message: "User logout successfully " });
