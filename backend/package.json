@@ -28,7 +28,7 @@
     "express-jwt": "^8.4.1",
     "express-session": "^1.18.0",
     "firebase": "^10.13.1",
-    "firebase-admin": "^12.4.0",
+    "firebase-admin": "^12.6.0",
     "handlebars": "^4.7.8",
     "joi": "^17.13.3",
     "mongodb": "^6.8.0",

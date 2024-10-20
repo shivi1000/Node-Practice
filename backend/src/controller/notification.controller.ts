@@ -53,6 +53,7 @@ class NotificationController {
                 }
             };
             const data = await notificationV1.createNotification(payload);
+            //await firebaseModule.sendPush([deviceToken], notificationData); // Pass an array containing the deviceToken
             await firebaseModule.sendPush(deviceToken, notificationData);
             return res.status(200).json({ message: `Notification send successfully!`, data: data });
         } catch (error) {
