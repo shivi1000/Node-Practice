@@ -16,6 +16,7 @@ import { userSessionV1 } from '../entity/userSessionV1.entity.js';
 import User from '../models/user.model.js';
 import UserSession from '../models/userSession.model.js';
 import { ENUM } from '../common/enum.js';
+import { sendLoginNotification, SignupNotification, LoginNotification, sendSignupNotification } from '../providers/rabbitmq/publisher.js';
 // import { firebaseManager } from '../providers/firebase/firebase.manager.js';
 // import { ENUM } from '../common/enum.js';
 
@@ -111,6 +112,12 @@ class UserController {
             }
             const token = jwt.sign(tokenPayload, appConfig.JWT_SECRET_KEY, { expiresIn: CONST.EXPIRY_JWT_TOKEN });
 
+            const notification: SignupNotification = {
+                userId: userByMobile._id.toString(),
+                message: 'Congratulations! You have successfully signed up.',
+            };
+            await sendSignupNotification(notification);
+
             return res.status(200).send({ message: `OTP verified successfully!, ${JSON.stringify(verifyResponses)}`, data: token });
         } catch (error) {
             console.log("Error while verify otp >>>>>>>>>>>", error);
@@ -147,6 +154,13 @@ class UserController {
                 }
                 const token = jwt.sign(tokenPayload, appConfig.JWT_SECRET_KEY, { expiresIn: CONST.EXPIRY_JWT_TOKEN });
                 await User.updateOne({ email: req.body.email }, { $inc: { loginCount: +1 } });
+
+                const notification: LoginNotification = {
+                    userId: userByEmail._id.toString(),
+                    message: 'You have successfully logged in!',
+                  };
+                  await sendLoginNotification(notification);
+
                 return res.status(200).json({ message: "Logged In Successfully", data: token });
             } else if (userByEmail.isPrimaryAccountHolder == true) {
                 const allDeviceData = await UserSession.find({ userId: userByEmail._id });

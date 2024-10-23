@@ -7,6 +7,15 @@ interface PublishOptions {
   message: string;
 }
 
+export interface SignupNotification {
+  userId: string;
+  message: string;
+}
+export interface LoginNotification {
+  userId: string;
+  message: string;
+}
+
 export async function publishMessage(options: PublishOptions): Promise<void> {
   const { exchange, routingKey, message } = options;
   const connection = await createConnection({
@@ -22,13 +31,36 @@ export async function publishMessage(options: PublishOptions): Promise<void> {
   await closeConnection(connection);
 }
 
-async function main() {
+export async function sendSignupNotification(notification: SignupNotification): Promise<void> {
   const options: PublishOptions = {
-    exchange: 'my_exchange',
-    routingKey: 'my_routing_key',
-    message: 'Hello, RabbitMQ!',
+    exchange: 'notifications',
+    routingKey: 'user_signup',
+    message: JSON.stringify(notification),
   };
   await publishMessage(options);
+}
+
+export async function sendLoginNotification(notification: LoginNotification): Promise<void> {
+  const options: PublishOptions = {
+    exchange: 'notifications',
+    routingKey: 'user_login',
+    message: JSON.stringify(notification),
+  };
+  await publishMessage(options);
+}
+
+async function main() {
+  const signupNotification: SignupNotification = {
+    userId: 'user123',
+    message: 'Congratulations! You have successfully signed up.',
+  };
+  await sendSignupNotification(signupNotification);
+
+  const loginNotification: LoginNotification = {
+    userId: 'user123',
+    message: 'You have successfully logged in.',
+  };
+  await sendLoginNotification(loginNotification);
 }
 
 main();
