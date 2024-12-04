@@ -5,6 +5,7 @@ export const CONST = {
     FORGOT_PASSWORD: "Forgot Password",
     EMAIL_TEMPLATES: `${process.cwd()}/src/mailer/forgotPassword.html`,
     MONGODB_OBJECTID_REGEX: /^[0-9a-fA-F]{24}$/,
+    REBASE: true,
     MERGING: "merging",
 
 }
